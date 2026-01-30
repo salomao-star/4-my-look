@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4 My Look™</title>
+
+<style>
+:root{
+  --bg:#02040a;
+  --accent:#7c7cff;
+  --glass:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.14);
+  --text:#f9fafb;
+  --muted:#9ca3af;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  min-height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto;
+  color:var(--text);
+  background:var(--bg);
+  transition:background 1s;
+}
+
+/* SPLASH */
+#splash{
+  position:fixed;inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#02040a;
+  z-index:999;
+}
+svg{width:140px}
+#four{fill:none;stroke:url(#g);stroke-width:10;stroke-dasharray:600;stroke-dashoffset:600;animation:draw 1.8s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* TELAS */
+.screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center}
+.box{
+  width:90%;max-width:380px;
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:26px;
+  padding:30px;
+  text-align:center;
+  backdrop-filter:blur(20px);
+}
+
+input,select,button{
+  width:100%;
+  margin-top:14px;
+  padding:14px;
+  border-radius:16px;
+  background:#02040a;
+  border:1px solid var(--border);
+  color:var(--text);
+}
+
+#app{display:none}
+header{
+  padding:16px 20px;
+  display:flex;
+  justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+
+section{padding:20px;max-width:900px;margin:auto}
+.card{
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:16px;
+  margin-bottom:16px;
+}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+
+.tag{
+  padding:10px;
+  border-radius:14px;
+  background:rgba(0,0,0,.4);
+  border:1px solid var(--border);
+  text-align:center;
+  cursor:pointer;
+}
+
+/* PANEL */
+#panel{
+  position:fixed;top:0;right:-260px;
+  width:240px;height:100%;
+  background:#02040a;
+  border-left:1px solid var(--border);
+  padding:20px;
+  transition:.4s;
+}
+</style>
+</head>
+
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+<svg viewBox="0 0 100 100">
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="#fff"/>
+<stop offset="100%" stop-color="#7c7cff"/>
+</linearGradient>
+</defs>
+<path id="four" d="M60 10 V90 M20 55 H80"/>
+</svg>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="screen">
+<div class="box">
+<h2>4 My Look</h2>
+<input id="userInput" placeholder="Seu nome">
+<button onclick="login()">Entrar</button>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<header>
+<strong>4 MY LOOK</strong>
+<span onclick="togglePanel()" id="userTop"></span>
+</header>
+
+<section>
+
+<div class="card">
+<h3>Humor</h3>
+<div class="grid">
+<div class="tag" onclick="setMood('calmo')">😌 Calmo</div>
+<div class="tag" onclick="setMood('foco')">🎯 Foco</div>
+<div class="tag" onclick="setMood('ousado')">🔥 Ousado</div>
+<div class="tag" onclick="setMood('neutro')">🖤 Neutro</div>
+</div>
+</div>
+
+<div class="card">
+<h3>Guarda-roupa</h3>
+<select id="cat">
+<option>Topo</option>
+<option>Baixo</option>
+<option>Calçado</option>
+<option>Acessório</option>
+</select>
+<input id="cloth" placeholder="Ex: Camisa preta">
+<button onclick="addCloth()">Adicionar</button>
+<div id="wardrobe"></div>
+</div>
+
+<div class="card">
+<h3>Look sugerido</h3>
+<p id="look" style="color:var(--muted)">Escolha um humor</p>
+</div>
+
+<div class="card">
+<h3>Histórico</h3>
+<div id="history"></div>
+</div>
+
+</section>
+</div>
+
+<div id="panel">
+<h3>Conta</h3>
+<button onclick="switchUser()">Trocar usuário</button>
+</div>
+
+<script>
+const splash=document.getElementById("splash");
+const loginScr=document.getElementById("login");
+const app=document.getElementById("app");
+const userTop=document.getElementById("userTop");
+const wardrobeDiv=document.getElementById("wardrobe");
+const lookTxt=document.getElementById("look");
+const historyDiv=document.getElementById("history");
+
+let user=localStorage.getItem("user");
+let mood=localStorage.getItem("mood");
+let wardrobe=JSON.parse(localStorage.getItem("wardrobe_"+user))||{};
+let history=JSON.parse(localStorage.getItem("history_"+user))||[];
+
+setTimeout(()=>{
+  splash.remove();
+  user?openApp():loginScr.style.display="flex";
+},1800);
+
+function login(){
+  user=userInput.value.trim();
+  if(!user)return;
+  localStorage.setItem("user",user);
+  wardrobe={};history=[];
+  openApp();
+  loginScr.style.display="none";
+}
+
+function openApp(){
+  app.style.display="block";
+  userTop.textContent=user;
+  applyMood();
+  renderWardrobe();
+  renderHistory();
+}
+
+function setMood(m){
+  mood=m;
+  localStorage.setItem("mood",m);
+  applyMood();
+  suggestLook();
+}
+
+function applyMood(){
+  const colors={
+    calmo:"#020617",
+    foco:"#02040a",
+    ousado:"#16040a",
+    neutro:"#000"
+  };
+  document.body.style.background=colors[mood]||"#02040a";
+}
+
+function addCloth(){
+  const c=cloth.value;
+  const cat=cat.value;
+  if(!c)return;
+  wardrobe[cat]=wardrobe[cat]||[];
+  wardrobe[cat].push(c);
+  localStorage.setItem("wardrobe_"+user,JSON.stringify(wardrobe));
+  cloth.value="";
+  renderWardrobe();
+}
+
+function renderWardrobe(){
+  wardrobeDiv.innerHTML="";
+  for(let c in wardrobe){
+    wardrobe[c].forEach(i=>{
+      const d=document.createElement("div");
+      d.textContent=`${c}: ${i}`;
+      wardrobeDiv.appendChild(d);
+    });
+  }
+}
+
+function suggestLook(){
+  let parts=[];
+  ["Topo","Baixo","Calçado","Acessório"].forEach(c=>{
+    if(wardrobe[c]) parts.push(wardrobe[c][Math.floor(Math.random()*wardrobe[c].length)]);
+  });
+  if(!parts.length)return;
+  const look=parts.join(" + ");
+  lookTxt.textContent=look;
+  history.push(look);
+  localStorage.setItem("history_"+user,JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory(){
+  historyDiv.innerHTML="";
+  history.slice(-5).reverse().forEach(l=>{
+    const d=document.createElement("div");
+    d.textContent="• "+l;
+    historyDiv.appendChild(d);
+  });
+}
+
+function togglePanel(){
+  panel.style.right=panel.style.right==="0px"?"-260px":"0px";
+}
+function switchUser(){
+  localStorage.removeItem("user");
+  location.reload();
+}
+</script>
+
+</body>
+</html>
